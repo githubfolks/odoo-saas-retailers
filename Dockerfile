@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install heavy ML dependencies first (rarely change)
 COPY requirements-ml.txt .
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --default-timeout=1000 -r requirements-ml.txt
+    pip install --prefer-binary --default-timeout=1000 -r requirements-ml.txt
 
 # Install base application dependencies
 COPY requirements-base.txt .

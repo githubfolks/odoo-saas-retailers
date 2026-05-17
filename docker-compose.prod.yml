@@ -13,7 +13,7 @@ services:
       retries: 5
 
   fastapi:
-    build: .
+    image: vikrambizz/retailers-saas:latest
     restart: unless-stopped
     env_file:
       - .env
@@ -27,7 +27,7 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
 
   celery_worker:
-    build: .
+    image: vikrambizz/retailers-saas:latest
     command: celery -A app.core.celery_app worker --loglevel=warning --concurrency=2
     volumes:
       - uploads_data:/app/app/static/uploads
