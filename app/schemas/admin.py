@@ -19,6 +19,9 @@ class TenantUpdate(BaseModel):
     n8n_webhook_url: Optional[str] = None
     primary_color: Optional[str] = None
     logo_url: Optional[str] = None
+    whatsapp_phone_id: Optional[str] = None
+    whatsapp_token: Optional[str] = None
+    owner_mobile: Optional[str] = None
 
 
 class TenantResponse(BaseModel):
@@ -29,6 +32,8 @@ class TenantResponse(BaseModel):
     razorpay_key: Optional[str] = None
     primary_color: Optional[str] = "#0d9488"
     logo_url: Optional[str] = None
+    whatsapp_phone_id: Optional[str] = None
+    owner_mobile: Optional[str] = None
 
     class Config:
         from_attributes = True

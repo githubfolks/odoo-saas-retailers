@@ -12,6 +12,9 @@ router = APIRouter(prefix="/api/settings", tags=["settings"])
 class SettingsUpdate(BaseModel):
     business_name: Optional[str] = None
     whatsapp_number: Optional[str] = None
+    whatsapp_phone_id: Optional[str] = None
+    whatsapp_token: Optional[str] = None
+    owner_mobile: Optional[str] = None
     razorpay_key: Optional[str] = None
     razorpay_secret: Optional[str] = None
     n8n_webhook_url: Optional[str] = None
@@ -28,17 +31,19 @@ class SettingsResponse(BaseModel):
     tenant_id: str
     business_name: str
     whatsapp_number: Optional[str] = None
+    whatsapp_phone_id: Optional[str] = None
+    owner_mobile: Optional[str] = None
     razorpay_key: Optional[str] = None
-    n8n_webhook_url: Optional[str]
-    primary_color: str
-    logo_url: Optional[str]
-    gstin: Optional[str]
-    address_line1: Optional[str]
-    address_line2: Optional[str]
-    city: Optional[str]
-    state: Optional[str]
-    pincode: Optional[str]
-    
+    n8n_webhook_url: Optional[str] = None
+    primary_color: str = "#0d9488"
+    logo_url: Optional[str] = None
+    gstin: Optional[str] = None
+    address_line1: Optional[str] = None
+    address_line2: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    pincode: Optional[str] = None
+
     class Config:
         from_attributes = True
 

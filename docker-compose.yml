@@ -1,10 +1,7 @@
-version: '3.8'
-
 services:
 
   redis:
     image: redis:7-alpine
-    container_name: odoo_saas_redis
     restart: unless-stopped
     command: redis-server --appendonly yes
     volumes:
@@ -20,7 +17,6 @@ services:
 
   fastapi:
     build: .
-    container_name: odoo_saas_fastapi
     restart: unless-stopped
     env_file:
       - .env
@@ -35,7 +31,6 @@ services:
 
   celery_worker:
     build: .
-    container_name: odoo_saas_celery
     command: celery -A app.core.celery_app worker --loglevel=info
     volumes:
       - .:/app

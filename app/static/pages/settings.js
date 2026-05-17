@@ -14,8 +14,11 @@
                         </div>
                         <div className="form-body">
                             <div style={{ padding: '1rem', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '12px', marginBottom: '1.5rem', border: '1px solid rgba(59, 130, 246, 0.1)' }}>
-                                <h4 style={{ fontSize: '0.875rem', marginBottom: '0.5rem', color: '#3b82f6' }}>WhatsApp Business API</h4>
-                                <SettingsField label="WhatsApp Number" value={settings.whatsapp_number} onChange={v => setSettings({ ...settings, whatsapp_number: v })} placeholder="919876543210" />
+                                <h4 style={{ fontSize: '0.875rem', marginBottom: '0.75rem', color: '#3b82f6' }}>WhatsApp Business API</h4>
+                                <SettingsField label="WhatsApp Number" value={settings.whatsapp_number} onChange={v => setSettings({ ...settings, whatsapp_number: v })} placeholder="919876543210" hint="Customer-facing number with country code" />
+                                <SettingsField label="Phone Number ID" value={settings.whatsapp_phone_id} onChange={v => setSettings({ ...settings, whatsapp_phone_id: v })} placeholder="1166454759877578" hint="From WAOfficial / Meta Business dashboard" />
+                                <SettingsField label="API Token" value={settings.whatsapp_token} onChange={v => setSettings({ ...settings, whatsapp_token: v })} placeholder="WAOfficial bearer token" hint="Keep this secret — never share publicly" type="password" />
+                                <SettingsField label="Owner Alert Number" value={settings.owner_mobile} onChange={v => setSettings({ ...settings, owner_mobile: v })} placeholder="919876543210" hint="Your personal number to receive new order alerts" />
                             </div>
                             <div style={{ padding: '1rem', background: 'rgba(139, 92, 246, 0.05)', borderRadius: '12px', border: '1px solid rgba(139, 92, 246, 0.1)' }}>
                                 <h4 style={{ fontSize: '0.875rem', marginBottom: '0.5rem', color: '#8b5cf6' }}>Razorpay Payments</h4>

@@ -5,7 +5,8 @@ from typing import Optional
 class Settings(BaseSettings):
     app_name: str = "SaaS API"
     postgres_url: str
-    whatsapp_verify_token: str
+    whatsapp_verify_token: str = "saas_wa_verify_token_2026"
+    waofficial_base_url: str = "https://app.waofficial.com/api"
     razorpay_key: str
     razorpay_secret: str = ""
     razorpay_webhook_secret: str = ""

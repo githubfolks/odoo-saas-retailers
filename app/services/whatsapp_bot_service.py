@@ -36,8 +36,8 @@ class WhatsAppBotService:
         self.ai_bot = AIBot(db, tenant_id)
 
         self.tenant = db.query(Tenant).filter(Tenant.tenant_id == tenant_id).first()
-        self.phone_id = getattr(self.tenant, "whatsapp_phone_id", None)
-        self.token = getattr(self.tenant, "whatsapp_token", None)
+        self.phone_id = getattr(self.tenant, "whatsapp_phone_id", None) or None
+        self.token = getattr(self.tenant, "whatsapp_token", None) or None
 
     # ------------------------------------------------------------------
     # Main entry point
@@ -202,6 +202,14 @@ class WhatsAppBotService:
                 await self.send_message(state.mobile, caption)
             return
 
+        # If input looks like a SKU code but wasn't found, give a specific message
+        import re as _re
+        if _re.match(r'^[A-Z0-9][A-Z0-9\-_/]{2,}$', sku_candidate):
+            await self.send_message(state.mobile,
+                f"Sorry, SKU *{sku_candidate}* was not found in our catalog.\n"
+                "Please check the code and try again, or type *catalog* to browse.")
+            return
+
         # Fallback AI
         ai_response = await self.ai_bot.process_message(text)
         await self.send_message(state.mobile, ai_response)
@@ -221,6 +229,31 @@ class WhatsAppBotService:
             ProductSKU.sku == state.selected_sku,
             ProductSKU.tenant_id == self.tenant_id
         ).first()
+
+        if not sku_record:
+            await self.send_message(state.mobile,
+                "Sorry, that product is no longer available. Type *catalog* to browse.")
+            state.current_state = _IDLE
+            state.selected_sku = None
+            return
+
+        stock = sku_record.quantity
+        if stock <= 0:
+            ctx = state.context or {}
+            ctx["notify_sku"] = sku_record.sku
+            state.context = ctx
+            state.current_state = _AWAITING_NOTIFY_CONFIRM
+            state.selected_sku = None
+            await self.send_message(state.mobile,
+                f"Sorry, *{sku_record.product_name}* just went out of stock.\n"
+                "Reply *NOTIFY* to be alerted when it's back, or type *catalog* to browse.")
+            return
+
+        if qty > stock:
+            await self.send_message(state.mobile,
+                f"Only *{stock}* unit(s) available for *{sku_record.product_name}*.\n"
+                f"Please enter a quantity up to {stock}:")
+            return
 
         price = sku_record.seasonal_price or sku_record.selling_price
         if self._b2b_customer:
@@ -437,6 +470,8 @@ class WhatsAppBotService:
             self.db.add(b2b_order)
             self._b2b_customer.credit_used += total_amount
             self.db.flush()
+            for item in cart:
+                self._deduct_stock(item["sku"], item["qty"])
 
             await self.send_message(
                 state.mobile,
@@ -472,6 +507,8 @@ class WhatsAppBotService:
         )
         self.db.add(new_order)
         self.db.flush()
+        for item in cart:
+            self._deduct_stock(item["sku"], item["qty"])
 
         if payment_method == "cod":
             await self.send_message(state.mobile,
@@ -494,6 +531,28 @@ class WhatsAppBotService:
 
         await self._alert_merchant_new_order(new_order.id, state.mobile, total_amount)
         _reset_state()
+
+    def _deduct_stock(self, sku: str, qty: int):
+        """Deduct qty from available inventory across locations (FIFO by location id)."""
+        from app.models.sku import SKUInventoryMapping
+        locations = (
+            self.db.query(SKUInventoryMapping)
+            .filter(
+                SKUInventoryMapping.sku == sku,
+                SKUInventoryMapping.tenant_id == self.tenant_id,
+                SKUInventoryMapping.quantity_available > 0,
+            )
+            .order_by(SKUInventoryMapping.id)
+            .all()
+        )
+        remaining = qty
+        for loc in locations:
+            if remaining <= 0:
+                break
+            deduct = min(remaining, loc.quantity_available)
+            loc.quantity_available -= deduct
+            loc.quantity_on_hand -= deduct
+            remaining -= deduct
 
     # ------------------------------------------------------------------
     # Helpers
@@ -841,7 +900,6 @@ class WhatsAppBotService:
         return result if result else text
 
     async def send_message(self, mobile: str, text: str):
-        # Translate to customer language if not English
         text = await self._maybe_translate(text)
 
         if not self.phone_id or not self.token:
@@ -849,13 +907,14 @@ class WhatsAppBotService:
             print(f"DEBUG [WA -> {mobile}]: {text}")
             return
 
-        url = f"https://graph.facebook.com/v17.0/{self.phone_id}/messages"
-        headers = {"Authorization": f"Bearer {self.token}"}
+        from app.integrations.whatsapp_sender import _wa_url, _wa_headers
+        url = _wa_url(self.phone_id)
+        headers = _wa_headers(self.token)
         payload = {
             "messaging_product": "whatsapp",
             "to": mobile,
             "type": "text",
-            "text": {"body": text}
+            "text": {"body": text},
         }
 
         try:
@@ -870,13 +929,14 @@ class WhatsAppBotService:
             await self.send_message(mobile, caption)
             return
 
-        url = f"https://graph.facebook.com/v17.0/{self.phone_id}/messages"
-        headers = {"Authorization": f"Bearer {self.token}"}
+        from app.integrations.whatsapp_sender import _wa_url, _wa_headers
+        url = _wa_url(self.phone_id)
+        headers = _wa_headers(self.token)
         payload = {
             "messaging_product": "whatsapp",
             "to": mobile,
             "type": "image",
-            "image": {"link": image_url, "caption": caption}
+            "image": {"link": image_url, "caption": caption},
         }
 
         try:

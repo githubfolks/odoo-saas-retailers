@@ -85,69 +85,42 @@
 
         // --- Icon System ---
         const Icon = ({ name, size = 20, className = "" }) => {
-            const [html, setHtml] = useState('');
+            const spanRef = useRef(null);
 
             useEffect(() => {
-                const generateIcon = () => {
-                    if (!window.lucide) return;
-
-                    // Lucide 0.400+ exports icons as PascalCase on window.lucide
-                    const PascalName = name.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('');
-                    const camelName = name.split('-').map((s, i) => i > 0 ? s.charAt(0).toUpperCase() + s.slice(1) : s).join('');
-
-                    try {
-                        // Optional chaining avoids TypeError when .icons is undefined
-                        const iconObj = window.lucide.icons?.[name] ||
-                                        window.lucide.icons?.[camelName] ||
-                                        window.lucide[PascalName];
-
-                        if (iconObj && typeof iconObj.toSvg === 'function') {
-                            setHtml(iconObj.toSvg({ width: size, height: size, 'stroke-width': 2, class: className }));
-                            return;
-                        }
-                    } catch (e) { /* continue to fallback */ }
-
-                    try {
-                        // createIcons only works on document-attached elements
-                        const wrapper = document.createElement('div');
-                        wrapper.style.cssText = 'position:absolute;left:-9999px;visibility:hidden;pointer-events:none;';
-                        const i = document.createElement('i');
-                        i.setAttribute('data-lucide', name);
-                        wrapper.appendChild(i);
-                        document.body.appendChild(wrapper);
-                        window.lucide.createIcons();
-                        setHtml(wrapper.innerHTML);
-                        document.body.removeChild(wrapper);
-                    } catch (e) {
-                        console.error('Lucide icon failed:', name, e);
-                    }
+                const render = () => {
+                    if (!spanRef.current || !window.lucide) return;
+                    const span = spanRef.current;
+                    span.innerHTML = '';
+                    const i = document.createElement('i');
+                    i.setAttribute('data-lucide', name);
+                    span.appendChild(i);
+                    // Scope createIcons to this element only — avoids mutating other React-managed SVGs
+                    window.lucide.createIcons({ els: [i] });
                 };
 
-                generateIcon();
+                render();
 
                 if (!window.lucide) {
-                    const checkInterval = setInterval(() => {
-                        if (window.lucide) {
-                            generateIcon();
-                            clearInterval(checkInterval);
-                        }
+                    const id = setInterval(() => {
+                        if (window.lucide) { render(); clearInterval(id); }
                     }, 50);
-                    return () => clearInterval(checkInterval);
+                    return () => clearInterval(id);
                 }
             }, [name, size, className]);
 
-            return <span 
+            return <span
+                ref={spanRef}
                 className={`icon-wrapper ${className}`}
-                style={{ 
-                    display: 'inline-flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    width: size, 
+                style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: size,
                     height: size,
                     verticalAlign: 'middle',
                     lineHeight: 0
                 }}
-                dangerouslySetInnerHTML={{ __html: html }}
             />;
         };
 

@@ -3,11 +3,10 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.services.whatsapp_bot_service import WhatsAppBotService
 from app.core.logger import request_logger
+from app.core.config import settings
 
 router = APIRouter(prefix="/whatsapp", tags=["WhatsApp Bot"])
 
-# VERIFICATION_TOKEN for Meta Webhook setup
-VERIFY_TOKEN = "saas_wa_verify_token_2026"
 
 @router.get("/webhook")
 async def verify_webhook(
@@ -16,7 +15,7 @@ async def verify_webhook(
     hub_verify_token: str = Query(None, alias="hub.verify_token")
 ):
     """Verify Meta Webhook."""
-    if hub_mode == "subscribe" and hub_verify_token == VERIFY_TOKEN:
+    if hub_mode == "subscribe" and hub_verify_token == settings.whatsapp_verify_token:
         return int(hub_challenge)
     raise HTTPException(status_code=403, detail="Verification failed")
 
@@ -39,19 +38,17 @@ async def handle_whatsapp_webhook(request: Request, db: Session = Depends(get_db
         mobile = message.get("from")
         text = message.get("text", {}).get("body")
         
-        # 2. Identify Tenant (Based on Phone Number ID)
-        # In a real SaaS, we map Meta Phone ID to Tenant ID
-        # For demo, we'll use a test tenant or look it up
+        # 2. Identify Tenant by the incoming Phone Number ID
         phone_id = value.get("metadata", {}).get("phone_number_id")
-        
+
         from app.models.tenant import Tenant
         tenant = db.query(Tenant).filter(Tenant.whatsapp_phone_id == phone_id).first()
-        
+
         if not tenant:
-            # Fallback for testing/unconfigured
-            tenant_id = "test_tenant_bulk" 
-        else:
-            tenant_id = tenant.tenant_id
+            request_logger.warning(f"No tenant found for phone_number_id={phone_id}")
+            return {"status": "ignored"}
+
+        tenant_id = tenant.tenant_id
 
         # 3. Process via Bot Service
         bot = WhatsAppBotService(db, tenant_id)
