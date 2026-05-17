@@ -1,0 +1,51 @@
+services:
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  fastapi:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - uploads_data:/app/app/static/uploads
+    ports:
+      - "${FASTAPI_PORT:-9011}:8000"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+
+  celery_worker:
+    build: .
+    command: celery -A app.core.celery_app worker --loglevel=warning --concurrency=2
+    volumes:
+      - uploads_data:/app/app/static/uploads
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+
+volumes:
+  redis_data:
+  uploads_data:
+
+networks:
+  default:
+    external: true
+    name: astro-app_default
+  global-proxy-network:
+    external: true

@@ -56,7 +56,7 @@ else:
     origins = _dev_origins
 
 app = FastAPI(
-    title="Odoo SaaS API",
+    title="RetailERP API",
     docs_url="/docs" if settings.debug else None,
     redoc_url="/redoc" if settings.debug else None,
     openapi_url="/openapi.json" if settings.debug else None,
