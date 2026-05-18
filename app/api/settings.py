@@ -17,6 +17,7 @@ class SettingsUpdate(BaseModel):
     owner_mobile: Optional[str] = None
     razorpay_key: Optional[str] = None
     razorpay_secret: Optional[str] = None
+    razorpay_webhook_secret: Optional[str] = None
     n8n_webhook_url: Optional[str] = None
     primary_color: Optional[str] = None
     logo_url: Optional[str] = None

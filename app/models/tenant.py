@@ -11,6 +11,7 @@ class Tenant(Base):
     whatsapp_number = Column(String, unique=True, index=True)
     razorpay_key = Column(String)
     razorpay_secret = Column(String)
+    razorpay_webhook_secret = Column(String, nullable=True)
     n8n_webhook_url = Column(String, nullable=True)
     primary_color = Column(String, default="#0d9488")
     logo_url = Column(String, nullable=True)

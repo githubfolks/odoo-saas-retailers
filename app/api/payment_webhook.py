@@ -56,12 +56,14 @@ async def payment_webhook(
         body = await request.body()
         body_str = body.decode()
         payload = json.loads(body_str)
-        
+        request_logger.info(f"Razorpay webhook event: {payload.get('event')}")
+
         # 1. Resolve Tenant from Payload Notes
-        # We stored tenant_id in the 'notes' during link creation
+        # Razorpay nests the entity under payload.<type>.entity
         data = payload.get("payload", {})
-        payment_link = data.get("payment_link", {}) or data.get("payment", {})
-        notes = payment_link.get("notes", {})
+        pl_entity = (data.get("payment_link") or {}).get("entity") or {}
+        pay_entity = (data.get("payment") or {}).get("entity") or {}
+        notes = pl_entity.get("notes") or pay_entity.get("notes") or {}
         tenant_id = notes.get("tenant_id")
         
         if not tenant_id:
@@ -70,20 +72,24 @@ async def payment_webhook(
 
         # 2. Fetch Tenant Security Keys
         tenant = db.query(Tenant).filter(Tenant.tenant_id == tenant_id).first()
-        if not tenant or not tenant.razorpay_secret:
+        if not tenant:
             request_logger.error(f"Tenant {tenant_id} configuration not found for webhook")
             return {"status": "error", "message": "tenant_config_missing"}
 
+        # Use dedicated webhook secret if set; fall back to API secret
+        webhook_secret = tenant.razorpay_webhook_secret or tenant.razorpay_secret
+        if not webhook_secret:
+            request_logger.error(f"No Razorpay secret configured for tenant {tenant_id}")
+            return {"status": "error", "message": "tenant_config_missing"}
+
         # 3. Verify Signature
-        if not verify_razorpay_signature(body_str, signature, tenant.razorpay_secret):
+        if not verify_razorpay_signature(body_str, signature, webhook_secret):
             request_logger.error(f"Invalid signature for tenant: {tenant_id}")
             raise HTTPException(status_code=403, detail="Invalid signature")
         
         # 4. Process Event
         event = payload.get("event")
-        if event == "payment_link.completed":
-            return await handle_payment_completed(payload, db, tenant)
-        elif event == "payment.captured":
+        if event in ("payment_link.paid", "payment_link.completed", "payment.captured"):
             return await handle_payment_completed(payload, db, tenant)
         
         return {"status": "received", "event": event}
@@ -104,9 +110,11 @@ async def handle_payment_completed(payload: Dict[str, Any], db: Session, tenant:
 
     try:
         data = payload.get("payload", {})
-        payment_link = data.get("payment_link", {}) or data.get("payment", {})
-        notes = payment_link.get("notes", {})
+        pl_entity = (data.get("payment_link") or {}).get("entity") or {}
+        pay_entity = (data.get("payment") or {}).get("entity") or {}
+        notes = pl_entity.get("notes") or pay_entity.get("notes") or {}
         order_id = notes.get("order_id")
+        link_id = pl_entity.get("id") or pay_entity.get("id")
 
         if not order_id:
             return {"status": "error", "message": "order_id_missing"}
@@ -122,7 +130,7 @@ async def handle_payment_completed(payload: Dict[str, Any], db: Session, tenant:
                 asyncio.create_task(N8NService.trigger_payment_flow(
                     tenant.n8n_webhook_url,
                     order.id,
-                    payment_link.get("id")
+                    link_id
                 ))
 
             # WhatsApp: confirm payment to customer + alert merchant
