@@ -27,28 +27,28 @@ async def handle_whatsapp_webhook(request: Request, db: Session = Depends(get_db
     request_logger.info(f"WA webhook payload: {data}")
 
     try:
-        # waofficial payload format
-        mobile = data.get("from") or data.get("sender")
-        text_obj = data.get("text") or data.get("message") or {}
-        if isinstance(text_obj, str):
-            text = text_obj
+        # waofficial wraps payload: {"event": "message", "data": {...}}
+        if data.get("event") == "message":
+            inner = data.get("data", {})
+            mobile = inner.get("senderPhoneNumber")
+            phone_id = inner.get("recipientPhoneNumberId")
+            msg_type = inner.get("messageType", "text")
+            content = inner.get("content", {})
+            text = content.get("text", "")
+            # interactive reply
+            if not text and msg_type == "interactive":
+                text = content.get("id") or content.get("title", "")
         else:
-            text = text_obj.get("body") or text_obj.get("text") or ""
-        phone_id = data.get("phoneNoId") or data.get("phone_number_id")
+            # fallback for direct test posts
+            mobile = data.get("from")
+            phone_id = data.get("phoneNoId")
+            msg_type = data.get("type", "text")
+            text_obj = data.get("text", "")
+            text = text_obj if isinstance(text_obj, str) else text_obj.get("body", "")
 
-        msg_type = data.get("type", "")
-
-        if not mobile or msg_type not in ("text", "interactive", "button", ""):
-            request_logger.info(f"WA webhook ignored: type={msg_type} mobile={mobile}")
+        if not mobile or not text:
+            request_logger.info(f"WA webhook ignored: type={msg_type} mobile={mobile} text={text!r}")
             return {"status": "ignored"}
-
-        if not text:
-            # interactive list reply — id is the SKU
-            interactive = data.get("interactive", {})
-            if interactive.get("type") == "list_reply":
-                text = interactive.get("list_reply", {}).get("id", "")
-            elif interactive.get("type") == "button_reply":
-                text = interactive.get("button_reply", {}).get("id", "")
 
         from app.models.tenant import Tenant
         tenant = db.query(Tenant).filter(Tenant.whatsapp_phone_id == phone_id).first()
