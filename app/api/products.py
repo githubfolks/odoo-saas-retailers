@@ -112,7 +112,7 @@ class ProductResponse(BaseModel):
     name: str
     description: Optional[str] = None
     price: float
-    sku: str
+    sku: Optional[str] = None
     quantity: int
     category_id: Optional[int] = None
     brand_id: Optional[int] = None
@@ -215,11 +215,14 @@ async def create_product_with_variants(
     brand_code = brand.code if brand and brand.code else "GEN"
 
     # 2. Create Template
+    # Derive a short template SKU from category + brand codes (used for display only)
+    template_sku = f"{cat_code}-{brand_code}".upper()
     db_product = Product(
         tenant_id=current_tenant_id,
         name=data.name,
         description=data.description,
         price=data.price,
+        sku=template_sku,
         category_id=data.category_id,
         brand_id=data.brand_id,
         unit_id=data.unit_id,
