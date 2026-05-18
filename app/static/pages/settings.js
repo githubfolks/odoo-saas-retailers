@@ -23,6 +23,7 @@
                             <div style={{ padding: '1rem', background: 'rgba(139, 92, 246, 0.05)', borderRadius: '12px', border: '1px solid rgba(139, 92, 246, 0.1)' }}>
                                 <h4 style={{ fontSize: '0.875rem', marginBottom: '0.5rem', color: '#8b5cf6' }}>Razorpay Payments</h4>
                                 <SettingsField label="Account Key ID" value={settings.razorpay_key} onChange={v => setSettings({ ...settings, razorpay_key: v })} placeholder="rzp_live_..." />
+                                <SettingsField label="Account Key Secret" value={settings.razorpay_secret} onChange={v => setSettings({ ...settings, razorpay_secret: v })} placeholder="Enter Razorpay secret" type="password" hint="Keep this secret — never share publicly" />
                             </div>
                             <button className="btn-primary" onClick={updateConfig} disabled={loading || userRole !== 'owner'}
                                 style={{ width: '100%', marginTop: '1.5rem', background: userRole === 'owner' ? 'var(--primary)' : 'var(--text-muted)', opacity: userRole === 'owner' ? 1 : 0.6, cursor: userRole === 'owner' ? 'pointer' : 'not-allowed' }}>
