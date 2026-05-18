@@ -22,28 +22,40 @@ async def verify_webhook(
 
 @router.post("/webhook")
 async def handle_whatsapp_webhook(request: Request, db: Session = Depends(get_db)):
-    """Handle incoming messages from Meta."""
+    """Handle incoming messages from waofficial."""
     data = await request.json()
-    
+    request_logger.info(f"WA webhook payload: {data}")
+
     try:
-        # 1. Parse Meta JSON
-        entry = data.get("entry", [])[0]
-        changes = entry.get("changes", [])[0]
-        value = changes.get("value", {})
-        messages = value.get("messages", [])
-        
-        if not messages:
+        # waofficial payload format
+        mobile = data.get("from") or data.get("sender")
+        text_obj = data.get("text") or data.get("message") or {}
+        if isinstance(text_obj, str):
+            text = text_obj
+        else:
+            text = text_obj.get("body") or text_obj.get("text") or ""
+        phone_id = data.get("phoneNoId") or data.get("phone_number_id")
+
+        msg_type = data.get("type", "")
+
+        if not mobile or msg_type not in ("text", "interactive", "button", ""):
+            request_logger.info(f"WA webhook ignored: type={msg_type} mobile={mobile}")
             return {"status": "ignored"}
-            
-        message = messages[0]
-        mobile = message.get("from")
-        text = message.get("text", {}).get("body")
-        
-        # 2. Identify Tenant by the incoming Phone Number ID
-        phone_id = value.get("metadata", {}).get("phone_number_id")
+
+        if not text:
+            # interactive list reply — id is the SKU
+            interactive = data.get("interactive", {})
+            if interactive.get("type") == "list_reply":
+                text = interactive.get("list_reply", {}).get("id", "")
+            elif interactive.get("type") == "button_reply":
+                text = interactive.get("button_reply", {}).get("id", "")
 
         from app.models.tenant import Tenant
         tenant = db.query(Tenant).filter(Tenant.whatsapp_phone_id == phone_id).first()
+
+        if not tenant:
+            request_logger.warning(f"No tenant for phone_id={phone_id}, trying all tenants with WA configured")
+            tenant = db.query(Tenant).filter(Tenant.whatsapp_phone_id.isnot(None)).first()
 
         if not tenant:
             request_logger.warning(f"No tenant found for phone_number_id={phone_id}")

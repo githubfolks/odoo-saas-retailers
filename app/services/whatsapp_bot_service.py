@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
 from typing import Dict, Any, Optional, List
-import httpx
 import json
 from datetime import datetime, timedelta
 from app.models.conversation import ConversationState
@@ -907,44 +906,19 @@ class WhatsAppBotService:
             print(f"DEBUG [WA -> {mobile}]: {text}")
             return
 
-        from app.integrations.whatsapp_sender import _wa_url, _wa_headers
-        url = _wa_url(self.phone_id)
-        headers = _wa_headers(self.token)
-        payload = {
-            "messaging_product": "whatsapp",
-            "to": mobile,
-            "type": "text",
-            "text": {"body": text},
-        }
-
-        try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(url, json=payload, headers=headers, timeout=10)
-                resp.raise_for_status()
-        except Exception as e:
-            request_logger.error(f"WhatsApp send failed: {str(e)}")
+        from app.integrations.whatsapp_sender import send_whatsapp_message
+        result = send_whatsapp_message(mobile, text, self.phone_id, self.token)
+        if not result:
+            request_logger.error(f"WhatsApp send failed for {mobile}")
 
     async def send_image(self, mobile: str, image_url: str, caption: str):
         if not self.phone_id or not self.token:
             await self.send_message(mobile, caption)
             return
 
-        from app.integrations.whatsapp_sender import _wa_url, _wa_headers
-        url = _wa_url(self.phone_id)
-        headers = _wa_headers(self.token)
-        payload = {
-            "messaging_product": "whatsapp",
-            "to": mobile,
-            "type": "image",
-            "image": {"link": image_url, "caption": caption},
-        }
-
-        try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(url, json=payload, headers=headers, timeout=10)
-                resp.raise_for_status()
-        except Exception as e:
-            request_logger.error(f"WhatsApp image send failed: {str(e)}")
+        from app.integrations.whatsapp_sender import send_media_message
+        result = send_media_message(mobile, image_url, "image", caption, self.phone_id, self.token)
+        if not result:
             await self.send_message(mobile, caption)
 
     # ------------------------------------------------------------------
