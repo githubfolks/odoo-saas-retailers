@@ -53,3 +53,9 @@ Once you have initial case studies and cash flow, invest in inbound marketing.
 1. **Create a 1-Minute Demo Video:** Focus strictly on the Variant Matrix and the Shopify Sync.
 2. **Build a "Hit List":** Find 50 mid-sized clothing brands on Instagram/Shopify and reach out to their founders on LinkedIn.
 3. **Set up a Demo Environment:** Ensure you have a perfectly working dummy account populated with beautiful product data, variants, and past orders so you can instantly share a screen and say, *"Look how clean this is."*
+
+
+CONTAINER ID   IMAGE                              COMMAND                  CREATED             STATUS                  PORTS                                                                          NAMES
+176b8a41db79   vikrambizz/retailers-saas:latest   "uvicorn app.main:ap…"   About an hour ago   Up About an hour        0.0.0.0:9001->8000/tcp, [::]:9001->8000/tcp                                    retailers-saas-fastapi-1
+765c5131f396   vikrambizz/retailers-saas:latest   "celery -A app.core.…"   About an hour ago   Up About an hour        8000/tcp                                                                       retailers-saas-celery_worker-1
+206dffe2fa57   redis:7-alpine                     "docker-entrypoint.s…"   15 hours ago        Up 15 hours (healthy)   6379/tcp                                                                       retailers-saas-redis-1

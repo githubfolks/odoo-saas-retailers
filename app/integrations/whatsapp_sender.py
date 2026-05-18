@@ -4,9 +4,8 @@ from app.core.config import settings
 from app.core.logger import request_logger
 
 
-def _wa_url(phone_number_id: str) -> str:
-    base = settings.waofficial_base_url.rstrip("/")
-    return f"{base}/{phone_number_id}/messages"
+def _wa_url() -> str:
+    return settings.waofficial_base_url.rstrip("/")
 
 
 def _wa_headers(token: str) -> Dict[str, str]:
@@ -24,13 +23,12 @@ def send_whatsapp_message(
 ) -> Optional[Dict[str, Any]]:
     try:
         response = requests.post(
-            _wa_url(phone_number_id),
+            _wa_url(),
             json={
-                "messaging_product": "whatsapp",
-                "recipient_type": "individual",
                 "to": recipient_number,
+                "phoneNoId": phone_number_id,
                 "type": "text",
-                "text": {"body": message_text},
+                "text": message_text,
             },
             headers=_wa_headers(whatsapp_token),
             timeout=10,
@@ -82,10 +80,10 @@ def send_template_message(
             ]
 
         response = requests.post(
-            _wa_url(phone_number_id),
+            _wa_url(),
             json={
-                "messaging_product": "whatsapp",
                 "to": recipient_number,
+                "phoneNoId": phone_number_id,
                 "type": "template",
                 "template": template_body,
             },
@@ -132,11 +130,10 @@ def send_interactive_list(
 
     try:
         response = requests.post(
-            _wa_url(phone_number_id),
+            _wa_url(),
             json={
-                "messaging_product": "whatsapp",
-                "recipient_type": "individual",
                 "to": recipient_number,
+                "phoneNoId": phone_number_id,
                 "type": "interactive",
                 "interactive": {
                     "type": "list",
@@ -186,11 +183,10 @@ def send_media_message(
             media_payload["caption"] = caption
 
         response = requests.post(
-            _wa_url(phone_number_id),
+            _wa_url(),
             json={
-                "messaging_product": "whatsapp",
-                "recipient_type": "individual",
                 "to": recipient_number,
+                "phoneNoId": phone_number_id,
                 "type": media_type,
                 media_type: media_payload,
             },
