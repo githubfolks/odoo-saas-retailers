@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Request, HTTPException, Query
+from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.services.whatsapp_bot_service import WhatsAppBotService
@@ -16,7 +17,7 @@ async def verify_webhook(
 ):
     """Verify Meta Webhook."""
     if hub_mode == "subscribe" and hub_verify_token == settings.whatsapp_verify_token:
-        return int(hub_challenge)
+        return PlainTextResponse(content=hub_challenge)
     raise HTTPException(status_code=403, detail="Verification failed")
 
 @router.post("/webhook")
