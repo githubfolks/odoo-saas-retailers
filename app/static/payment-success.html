@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Successful</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f0fdf4;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 2.5rem 2rem;
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+        }
+        .icon {
+            width: 72px;
+            height: 72px;
+            background: #dcfce7;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2rem;
+        }
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #15803d;
+            margin-bottom: 0.5rem;
+        }
+        .order-id {
+            font-size: 0.95rem;
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+        }
+        .order-id span {
+            font-weight: 600;
+            color: #111827;
+        }
+        p {
+            font-size: 0.9rem;
+            color: #6b7280;
+            line-height: 1.6;
+        }
+        .wa-note {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #f0fdf4;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            color: #166534;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon">✅</div>
+        <h1>Payment Successful!</h1>
+        <p class="order-id">Order <span id="order-num"></span></p>
+        <p>Your payment has been received. We'll prepare your order right away.</p>
+        <div class="wa-note">
+            📲 You'll receive a WhatsApp confirmation shortly.
+        </div>
+    </div>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const order = params.get('order');
+        document.getElementById('order-num').textContent = order ? '#' + order : '';
+    </script>
+</body>
+</html>
