@@ -22,24 +22,27 @@ def seed_users():
             return
 
         for tenant in tenants:
+            admin_email = f"admin@{tenant.tenant_id}.com"
+            admin_password = "admin123"
+            
             # Check if user already exists
-            existing_user = db.query(User).filter(User.email == tenant.odoo_user).first()
+            existing_user = db.query(User).filter(User.email == admin_email).first()
             if not existing_user:
-                print(f"Creating owner user for tenant {tenant.tenant_id}: {tenant.odoo_user}")
+                print(f"Creating owner user for tenant {tenant.tenant_id}: {admin_email}")
                 new_user = User(
-                    email=tenant.odoo_user,
-                    hashed_password=pwd_context.hash(tenant.odoo_password),
+                    email=admin_email,
+                    hashed_password=pwd_context.hash(admin_password),
                     role=UserRole.OWNER,
                     tenant_id=tenant.tenant_id
                 )
                 db.add(new_user)
             else:
                 # Update password if it's the default or doesn't match
-                if not pwd_context.verify(tenant.odoo_password, existing_user.hashed_password):
-                    print(f"Updating password for existing user: {tenant.odoo_user}")
-                    existing_user.hashed_password = pwd_context.hash(tenant.odoo_password)
+                if not pwd_context.verify(admin_password, existing_user.hashed_password):
+                    print(f"Updating password for existing user: {admin_email}")
+                    existing_user.hashed_password = pwd_context.hash(admin_password)
                 else:
-                    print(f"User {tenant.odoo_user} already exists with correct password")
+                    print(f"User {admin_email} already exists with correct password")
         
         db.commit()
         print("✅ User seeding/sync completed!")

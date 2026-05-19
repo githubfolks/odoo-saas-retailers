@@ -55,9 +55,6 @@ def seed():
                 tenant_id=tenant_id,
                 business_name="Thread & Trend Garments",
                 whatsapp_number="919888777666",
-                odoo_url="https://garments.odoo.com",
-                odoo_db="garment_prod",
-                is_active=True
             )
             db.add(tenant)
             db.flush()
